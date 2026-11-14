@@ -1,0 +1,2 @@
+[tools]
+"pipx:platformio" = "6.2.0"

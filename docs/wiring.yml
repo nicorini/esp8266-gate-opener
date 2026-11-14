@@ -1,0 +1,33 @@
+# WireViz source for docs/wiring.svg: wireviz -f s docs/wiring.yml
+
+connectors:
+  NodeMCU:
+    type: NodeMCU v3
+    subtype: ESP8266
+    pinlabels: [G, 3V, D1, D8, D5, D7, D6, D2]
+  CC1101:
+    type: Ebyte E07-M1101D
+    subtype: CC1101, 433 MHz
+    pinlabels: [GND, VCC, GDO0, CSN, SCK, MOSI, MISO, GDO2]
+  Button:
+    type: Push button
+    subtype: normally open
+    pinlabels: [A, B]
+
+cables:
+  W1:
+    category: bundle
+    colors: [BK, RD, YE, OG, GN, BU, VT]
+  W2:
+    category: bundle
+    colors: [BK, WH]
+
+connections:
+  -
+    - NodeMCU: [1-7]
+    - W1: [1-7]
+    - CC1101: [1-7]
+  -
+    - NodeMCU: [1, 8]
+    - W2: [1-2]
+    - Button: [1-2]
