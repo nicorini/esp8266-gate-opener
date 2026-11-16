@@ -40,6 +40,22 @@ void test_long_hold_times_out_once() {
   TEST_ASSERT_FALSE(w.update(12000));  // still held: no restart until a new press
 }
 
+void test_trigger_transmits_for_duration() {
+  TxWindow w(MIN_MS, MAX_MS);
+  w.trigger(100, 1000);
+  TEST_ASSERT_TRUE(w.update(1099));
+  TEST_ASSERT_FALSE(w.update(1100));
+}
+
+void test_trigger_extends_a_click() {
+  TxWindow w(MIN_MS, MAX_MS);
+  w.press(0);
+  w.release();
+  w.trigger(200, 1000);
+  TEST_ASSERT_TRUE(w.update(1199));
+  TEST_ASSERT_FALSE(w.update(1200));
+}
+
 void test_survives_millis_overflow() {
   TxWindow w(MIN_MS, MAX_MS);
   unsigned long start = (unsigned long)-200;
@@ -55,6 +71,8 @@ int main() {
   RUN_TEST(test_short_click_lasts_min_time);
   RUN_TEST(test_hold_transmits_until_release);
   RUN_TEST(test_long_hold_times_out_once);
+  RUN_TEST(test_trigger_transmits_for_duration);
+  RUN_TEST(test_trigger_extends_a_click);
   RUN_TEST(test_survives_millis_overflow);
   return UNITY_END();
 }

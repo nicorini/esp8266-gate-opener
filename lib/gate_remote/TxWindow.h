@@ -1,5 +1,5 @@
 // Decides when to transmit. A button press transmits while the button is held, for at least
-// minMs and at most maxMs.
+// minMs and at most maxMs; trigger() transmits for a fixed time, on a HomeKit command.
 #pragma once
 
 class TxWindow {
@@ -13,6 +13,12 @@ class TxWindow {
   }
 
   void release() { held_ = false; }
+
+  void trigger(unsigned long now, unsigned long durationMs) {
+    if (!active_) start(now);
+    unsigned long until = now - startMs_ + durationMs;
+    if (until > untilMs_) untilMs_ = until;
+  }
 
   // Returns true while the radio should transmit.
   bool update(unsigned long now) {
