@@ -88,6 +88,9 @@ The project builds with [PlatformIO](https://platformio.org): install the
 | `rf_tx_test` | `tools/rf_link_test/tx/` | Sends a known test code once a second, at low power |
 | `rf_rx_test` | `tools/rf_link_test/rx/` | Prints received codes and peak RSSI every 500 ms |
 
+The radio, button and transmit-timing code lives in `lib/gate_remote/`; `pio test -e native`
+runs the unit tests of the transmit timing on the host.
+
 ## Troubleshooting
 
 **`CC1101 not found`, or `VERSION` reads `0x00` or `0xFF`.** SPI wiring or power. Check CSN,
@@ -95,10 +98,10 @@ SCK, MOSI and MISO, and that VCC is on 3V.
 
 **The barrier does not respond.** Check the radio before the code. With two boards, flash
 `rf_tx_test` on one and `rf_rx_test` on the other, 1–2 m apart: the receiver should decode
-`0xA5A5xx` with a rising counter. The test transmits continuously, so keep it short. Then flash `rf_rx_test` on both and press the original remote
-halfway between them. A healthy module receives the remote at about -20 to -35 dBm; a module
-reading -75 dBm or less has a damaged antenna path (SMA connector, solder joint or module),
-which also weakens what it transmits.
+`0xA5A5xx` with a rising counter. The test transmits continuously, so keep it short. Then flash
+`rf_rx_test` on both and press the original remote halfway between them. A healthy module
+receives the remote at about -20 to -35 dBm; a module reading -75 dBm or less has a damaged
+antenna path (SMA connector, solder joint or module), which also weakens what it transmits.
 
 **`MARCSTATE` is not `0x13` while transmitting or `0x0D` while receiving.** The CC1101 is not in
 the expected state; reflash and check the power supply.
