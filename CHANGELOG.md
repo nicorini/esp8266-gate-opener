@@ -1,13 +1,15 @@
 # Changelog
 
-## [2.1] - unreleased
+## [2.1] - 2026-11-19
+
+Tested on the barrier.
 
 - `gate_opener`: optional 0.96" I2C OLED on D3/D4. With the display, the button opens after a
   1 s hold, with a filling bar, and a short click shows status pages (state, WiFi, openings,
   system). Boot, WiFi and HomeKit pairing messages; lasting faults stay on as small moving text.
   Without a display, or with it unplugged, every press opens at once as in 2.0.
 - `oled_test`: I2C scan and display test pages.
-- 3D-printed enclosure in `hardware/enclosure.scad`.
+- 3D-printed enclosure in `hardware/enclosure.scad`, not printed yet: check the measurements first.
 
 ## [2.0] - 2026-11-16
 
