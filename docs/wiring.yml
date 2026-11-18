@@ -4,7 +4,7 @@ connectors:
   NodeMCU:
     type: NodeMCU v3
     subtype: ESP8266
-    pinlabels: [G, 3V, D1, D8, D5, D7, D6, D2]
+    pinlabels: [G, 3V, D1, D8, D5, D7, D6, D2, D3, D4]
   CC1101:
     type: Ebyte E07-M1101D
     subtype: CC1101, 433 MHz
@@ -13,6 +13,10 @@ connectors:
     type: Push button
     subtype: normally open
     pinlabels: [A, B]
+  OLED:
+    type: 0.96" OLED, 128x64
+    subtype: SSD1306, I2C (optional)
+    pinlabels: [GND, VDD, SCK, SDA]
 
 cables:
   W1:
@@ -21,6 +25,9 @@ cables:
   W2:
     category: bundle
     colors: [BK, WH]
+  W3:
+    category: bundle
+    colors: [BK, RD, BN, GY]
 
 connections:
   -
@@ -31,3 +38,7 @@ connections:
     - NodeMCU: [1, 8]
     - W2: [1-2]
     - Button: [1-2]
+  -
+    - NodeMCU: [1, 2, 10, 9]
+    - W3: [1-4]
+    - OLED: [1-4]

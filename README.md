@@ -2,7 +2,8 @@
 
 A push button that opens a 433 MHz gate barrier. An ESP8266 drives a CC1101 radio module and
 replays the code of the barrier's original fixed-code remote for as long as the button is held.
-Optionally it is also a HomeKit switch, so the gate opens from the Home app, Siri and a HomePod.
+Optionally it is also a HomeKit switch, so the gate opens from the Home app, Siri and a HomePod,
+and it has a small OLED display for status pages.
 
 A personal project, shared as a reference for anyone building something similar.
 
@@ -12,7 +13,9 @@ The original remote is read once with the `sniffer` firmware; its code, protocol
 length go into `include/secrets.h`. The main firmware then generates the same OOK signal with
 [rc-switch](https://github.com/sui77/rc-switch) on the CC1101's GDO0 pin, and the CC1101, in
 asynchronous serial mode, transmits it at 433.92 MHz and about 10 dBm. Transmission repeats while
-the button is held, for at least 0.5 s and at most 10 s.
+the button is held, for at least 0.5 s and at most 10 s. With the display connected, the button
+must be held for 1 s before it opens, so a short click can show the status pages instead (see
+[Display](#display)).
 
 With WiFi configured, the board also runs a HomeKit accessory server
 ([Arduino-HomeKit-ESP8266](https://github.com/Mixiaoxiao/Arduino-HomeKit-ESP8266)): turning the
@@ -26,8 +29,24 @@ WiFi. Without WiFi configured, WiFi stays off.
 | 1 | NodeMCU v3 (ESP8266, ESP-12, CH340 USB) | A Wemos D1 mini should work too |
 | 1 | Ebyte E07-M1101D v2.0 (CC1101, 433 MHz) | SMA connector, 3.3 V only |
 | 1 | 433 MHz antenna, SMA | Fit it before transmitting |
-| 1 | Push button, normally open | |
+| 1 | Push button, normally open | 12x12 mm tactile switch with a cap, or any panel button |
+| 1 | 0.96" OLED, 128x64, I2C, SSD1306 | Optional. The 4-pin `GND VDD SCK SDA` module |
 | — | Jumper wires, USB 5 V supply | |
+
+A 3D-printed enclosure (OpenSCAD, measurements and print notes in the header) is in
+[`hardware/enclosure.scad`](hardware/enclosure.scad). Open *Window → Customizer* in OpenSCAD to
+lift the lid, hide components or cut the model open.
+
+| | |
+|---|---|
+| ![Enclosure, closed](docs/enclosure.png) | ![Enclosure with the lid lifted](docs/enclosure-open.png) |
+| Closed: button, display window, antenna | Lid lifted |
+| ![Lid seen from above](docs/enclosure-top.png) | ![Right side with the USB opening](docs/enclosure-usb.png) |
+| Lid from above | Right side: micro-USB opening |
+| ![Inside, without the lid](docs/enclosure-inside.png) | ![Section through the button, display and radio](docs/enclosure-section.png) |
+| Inside: NodeMCU on the floor, button pillar, CC1101 against the wall | Section: button on its pillar, display under the lid, CC1101 and SMA |
+
+`sh hardware/render.sh` regenerates the STL files and these images.
 
 ## Wiring
 
@@ -45,7 +64,18 @@ WiFi. Without WiFi configured, WiFi stays off.
 | 8 | GDO2 | — | not connected |
 | — | Button | GPIO4 | D2, other leg to G |
 
+| OLED pin | Signal | GPIO | NodeMCU v3 |
+|---|---|---|---|
+| GND | GND | GND | G |
+| VDD | 3V3 | 3V3 | 3V |
+| SCK | I2C clock | GPIO2 | D4 |
+| SDA | I2C data | GPIO0 | D3 |
+
 - Power the CC1101 from **3V**, never from VU/VIN, which carry 5 V.
+- Power the OLED from **3V** too: its I2C pull-ups go to VDD, and 5 V on D3/D4 would reach the
+  ESP8266. D1 and D2, the usual I2C pins, are taken by the CC1101 and the button.
+- On a 12x12 tactile switch, wire two legs on the same side: legs facing each other across the
+  body are always connected. Check with a multimeter.
 - Pin 1 is bottom left, seen from the component side. Check it with a multimeter before powering
   up: it is connected to the SMA connector's body.
 - Using another board: change `board` in `platformio.ini` and map the same GPIOs.
@@ -84,8 +114,12 @@ The project builds with [PlatformIO](https://platformio.org): install the
    pio run -t upload -t monitor
    ```
 
-   The boot log ends with `Ready, HomeKit on` (or `off`). Pressing the button prints
-   `Transmitting`, releasing it `Released`; holding it past 10 s prints `Timeout`.
+   The boot log shows `Display OK` (or `No display: every press opens`) and ends with
+   `Ready, HomeKit on` (or `off`). Opening prints `Transmitting (pulsante)`, releasing the button
+   `Released` and then `Sent`; holding it past 10 s prints `Timeout`.
+
+   To check the display alone, flash `pio run -e oled_test -t upload -t monitor`: it scans I2C
+   and cycles four test pages.
 
 ## HomeKit
 
@@ -104,6 +138,27 @@ state, which this barrier cannot report. It is also a secure accessory, so Siri 
 for confirmation on an iPhone before opening it. A switch opens without confirmation: anyone who
 can talk to your HomePod can open the gate, as anyone at home can press the button.
 
+## Display
+
+The screen is off at rest. Its texts are in Italian.
+
+- **Open:** hold the button. After a moment a bar fills; at 1 s the screen shows "Apertura" and the
+  gate code goes out until you release, for at most 10 s ("Max 10s" if you hit the limit).
+  "Apertura" stays 2 s after you release, then the screen goes off. A HomeKit command shows
+  "Apertura / da HomeKit" for about 6 s.
+- **Status:** a short click shows "Stato" (radio, WiFi, HomeKit); each further click shows the
+  next page: WiFi (signal, IP), "Aperture" (openings since boot, the last one) and "Sistema"
+  (uptime, firmware, free memory). The screen goes off 5 s after the last click.
+- **Messages:** "WiFi..." while connecting at boot, then "WiFi ok" or "WiFi no"; "Da abbinare"
+  with the setup code until HomeKit is paired. A lasting fault ("No radio", "WiFi no") stays on
+  as small text that moves every minute, so it does not burn into the panel.
+
+Without a display every press opens at once, as in firmware 2.0. The firmware checks for the
+display at boot and at every press, so a faulty or unplugged display never stops the gate from
+opening; plugged back in, it works again from the next press. Set `DISPLAY_ENABLED` to `false`
+in `src/gate_opener/main.cpp` for a display that answers but shows nothing; `CONTRAST` sets the
+brightness.
+
 ## Firmware
 
 | Environment | Source | Purpose |
@@ -112,9 +167,10 @@ can talk to your HomePod can open the gate, as anyone at home can press the butt
 | `sniffer` | `tools/sniffer/` | Decodes a remote and prints its parameters |
 | `rf_tx_test` | `tools/rf_link_test/tx/` | Sends a known test code once a second, at low power |
 | `rf_rx_test` | `tools/rf_link_test/rx/` | Prints received codes and peak RSSI every 500 ms |
+| `oled_test` | `tools/oled_test/` | Scans I2C and shows four display test pages |
 
-The radio, button and transmit-timing code lives in `lib/gate_remote/`; `pio test -e native`
-runs the unit tests of the transmit timing on the host.
+The radio, button, click/hold and transmit-timing code lives in `lib/gate_remote/`;
+`pio test -e native` runs the unit tests of the click/hold and transmit timing on the host.
 
 ## Troubleshooting
 
@@ -131,6 +187,13 @@ antenna path (SMA connector, solder joint or module), which also weakens what it
 **`MARCSTATE` is not `0x13` while transmitting or `0x0D` while receiving.** The CC1101 is not in
 the expected state; reflash and check the power supply.
 
+**The board does not boot, or reboots in a loop, with the OLED connected.** The OLED is wired but
+not powered: an unpowered display holds D3 and D4 low, and the ESP8266 needs them high at boot.
+Check VDD on 3V and GND on G. Unplug SDA, not VDD, to test without the display.
+
+**`No display: every press opens` with the OLED connected.** I2C wiring: SCK on D4, SDA on D3.
+`oled_test` prints the addresses it finds; the firmware expects `0x3C`.
+
 ## Legal
 
 In Europe, 433.05–434.79 MHz is a band for non-specific short-range devices, limited to 10 mW
@@ -146,5 +209,6 @@ and replayed by anyone nearby: this device is no more secure than the original r
 ## License
 
 [MIT](LICENSE). Dependencies: [rc-switch](https://github.com/sui77/rc-switch) (LGPL-2.1),
-[SmartRC-CC1101-Driver-Lib](https://github.com/LSatan/SmartRC-CC1101-Driver-Lib) (MIT) and
-[Arduino-HomeKit-ESP8266](https://github.com/Mixiaoxiao/Arduino-HomeKit-ESP8266) (MIT).
+[SmartRC-CC1101-Driver-Lib](https://github.com/LSatan/SmartRC-CC1101-Driver-Lib) (MIT),
+[Arduino-HomeKit-ESP8266](https://github.com/Mixiaoxiao/Arduino-HomeKit-ESP8266) (MIT) and
+[U8g2](https://github.com/olikraus/u8g2) (BSD-2-Clause).

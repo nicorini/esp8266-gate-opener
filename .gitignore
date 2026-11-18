@@ -3,3 +3,6 @@
 .DS_Store
 compile_commands.json
 include/secrets.h
+
+# Generated from hardware/enclosure.scad; attached to the GitHub releases
+hardware/stl/

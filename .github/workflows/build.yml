@@ -23,4 +23,4 @@ jobs:
       - run: pip install platformio==6.2.0
       - run: cp include/secrets.example.h include/secrets.h
       - run: pio test -e native
-      - run: pio run -e gate_opener -e sniffer -e rf_tx_test -e rf_rx_test
+      - run: pio run -e gate_opener -e sniffer -e rf_tx_test -e rf_rx_test -e oled_test
